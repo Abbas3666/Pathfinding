@@ -44,7 +44,7 @@ projet-pathfinding/
 - **Julia** : [Télécharger Julia](https://julialang.org/downloads/)
 - **Dépendances** : Installer les packages nécessaires :
   ```bash
-  julia -e 'using Pkg; Pkg.add(["DataStructures", "Printf"])'
+  julia -e 'using Pkg; Pkg.add(["DataStructures"])'
   ```
 
 ### **2. Exécution des Algorithmes**
