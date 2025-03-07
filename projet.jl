@@ -2,7 +2,7 @@ using DataStructures
 using Printf  # Pour formater l'affichage des nombres
 
 # Fonction pour charger la carte à partir d'un fichier
-function loadMap(fname)
+function loadMap(fname) 
     # Lire toutes les lignes du fichier
     lines = readlines(fname)
     
