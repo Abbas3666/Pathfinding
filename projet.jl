@@ -106,7 +106,7 @@ function bfs(map, start, goal)
             if isValid(map, next_pos) && !(next_pos in visited)
                 push!(visited, next_pos)  # Marquer comme visité
                 path[next_pos] = current  # Enregistrer le prédécesseur pour la reconstruction du chemin
-                next_cost = cost + map[next_pos[1], next_pos[2]]  # Calculer le nouveau coût
+                next_cost = cost + 1  #  BFS utilise un coût uniforme de 1 par pas
                 enqueue!(queue, (next_pos, next_cost))  # Ajouter à la file d'attente
             end
         end
