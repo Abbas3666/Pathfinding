@@ -51,6 +51,17 @@ projet-pathfinding/
 
 Les algorithmes peuvent être exécutés avec les fonctions suivantes :
 ```julia
+algoBFS(nom_fichier, depart, arrivee)
+algoDijkstra(nom_fichier, depart, arrivee)
+algoGlouton(nom_fichier, depart, arrivee)
+algoAstar(nom_fichier, depart, arrivee)
+```
+
+**Paramètres**
+- `nom_fichier` : Nom du fichier de carte (exemple : "bbb.map").
+- `depart` : Coordonnées du point de départ `(x, y)`.
+- `arrivee` : Coordonnées du point d'arrivée `(x, y)`.
+##Example
 algoBFS("bbb.map", (12, 5), (2, 18))
 algoDijkstra("bbb.map", (12, 5), (2, 18))
 algoGlouton("bbb.map", (12, 5), (2, 18))
@@ -80,12 +91,19 @@ Chemin : (12, 5) → (11, 5) → ... → (2, 18)
 
 ## Comparaison des Algorithmes
 
+### **Performances**
+- **BFS** : Simple mais inefficace sur des graphes pondérés.
+- **Dijkstra** : Trouve le chemin optimal mais plus lent que A*.
+- **A*** : Rapide et efficace grâce à l'utilisation d'une heuristique.
+- **Algorithme Glouton** : Rapide mais ne garantit pas l'optimalité.
+
+
 | Algorithme | Distance | États Explorés | Temps d'Exécution (s) |
 |------------|---------|---------------|----------------------|
-| BFS        | 21      | 321           | 0.00069              |
-| Dijkstra   | 14.0    | 162           | 0.040                |
-| Glouton    | 23      | 71            | 0.00028              |
-| A*         | 21      | 95            | 0.00050              |
+| BFS        | 23      | 370           | 0.00069              |
+| Dijkstra   | 23      | 383           | 0.040                |
+| Glouton    | 29      | 74            | 0.00028              |
+| A*         | 23      | 70            | 0.00050              |
 
 
 
