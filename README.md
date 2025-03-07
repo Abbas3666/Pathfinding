@@ -61,6 +61,8 @@ algoAstar(nom_fichier, depart, arrivee)
 - `nom_fichier` : Nom du fichier de carte (exemple : "bbb.map").
 - `depart` : Coordonnées du point de départ `(x, y)`.
 - `arrivee` : Coordonnées du point d'arrivée `(x, y)`.
+
+- 
 ##Example
 algoBFS("bbb.map", (12, 5), (2, 18))
 algoDijkstra("bbb.map", (12, 5), (2, 18))
