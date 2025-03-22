@@ -181,7 +181,7 @@ function dijkstra(map, start, goal)
     return [], -1, states_evaluated  # Retourner un chemin vide, un coût de -1 et le nombre d'états évalués
 end
 
-function Glouton(map, start, goal)
+greedy_best_first(map, start, goal)
     # Vérifier si le point de départ ou d'arrivée est infranchissable
     if !isValid(map, start) || !isValid(map, goal)
         println("Le point de départ ou d'arrivée est infranchissable.")
