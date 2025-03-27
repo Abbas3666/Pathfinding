@@ -1,26 +1,26 @@
 
-# 🚀 Projet Path Finding (Recherche de Chemin)
+# Projet Path Finding (Recherche de Chemin)
 
 Ce projet implémente et compare plusieurs algorithmes de recherche de chemin sur des cartes 2D issues de jeux ou de villes réelles.
 
-## 🧠 Algorithmes Implémentés
+##  Algorithmes Implémentés
 
-- 🔁 **BFS** (Breadth-First Search) – Recherche en largeur
-- 🟦 **Dijkstra** – Algorithme optimal basé sur les coûts
-- 🌟 **A\*** (A étoile) – Recherche optimale avec heuristique
-- ⚡ **Greedy Best-First** – Glouton, basé uniquement sur l’heuristique
-- 🧮 **Weighted A\*** (WA*) – Variante de A\* avec pondération :
+-  **BFS** (Breadth-First Search) – Recherche en largeur
+-  **Dijkstra** – Algorithme optimal basé sur les coûts
+-  **A\*** (A étoile) – Recherche optimale avec heuristique
+-  **Greedy Best-First** – Glouton, basé uniquement sur l’heuristique
+-  **Weighted A\*** (WA*) – Variante de A\* avec pondération :
   - Standard (\(\omega \geq 1\))
   - Pondéré 0–1 (\(0 \leq \omega \leq 1\))
   - Dynamique (\(\omega\) diminue pendant l'exploration)
 
-## 📂 Fichiers Principaux
+##  Fichiers Principaux
 
 - `aaa.jl` : Code principal regroupant tous les algorithmes
 - `didactic.map`, `easy.map`, `difficult.map` : Fichiers de cartes tests
 - `README.md` : Documentation du projet
 
-## ⚙️ Utilisation
+##  Utilisation
 
 ### Installation
 
@@ -40,15 +40,15 @@ algoWAstarDynamique("easy.map", (1,1), (5,10))
 algoWAstarWeighted01("didactic.map", (1,1), (5,10))
 ```
 
-## 🔍 Résultats Affichés
+##  Résultats Affichés
 
 Chaque appel affiche :
-- 🟢 Le chemin trouvé
-- 📏 La distance
-- 🔄 Le nombre d’états explorés
-- ⏱ Le temps CPU
+-  Le chemin trouvé
+-  La distance
+-  Le nombre d’états explorés
+-  Le temps CPU
 
-## 💡 À savoir sur WA*
+##  À savoir sur WA*
 
 - `ω = 1.5` : parfois moins efficace que A* selon le cas.
 - `ω = 1.6` : excellent compromis dans les grandes cartes.
