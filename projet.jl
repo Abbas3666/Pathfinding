@@ -1,5 +1,6 @@
 using DataStructures
 using Printf  # Pour formater l'affichage des nombres
+using BenchmarkTools
 
 # Fonction pour charger la carte à partir d'un fichier
 function loadMap(fname) 
@@ -33,15 +34,15 @@ function loadMap(fname)
         for j in 1:width
             char = line[j]  # Lire le caractère à la position (i, j)
             if char == '.'
-                map[i, j] = 1  
+                map[i, j] = 1  # Terrain normal, coût de déplacement de 1
             elseif char == 'T'
-                map[i, j] = 1   # Terrain passable
+                map[i, j] = 1   # Terrain passable, coût de déplacement de 1
             elseif char == 'S'
-                map[i, j] = 5
+                map[i, j] = 5   # Terrain spécial, coût de déplacement de 5
             elseif char == 'W'
-                map[i, j] = 8    # Terrain difficile, coût plus élevé
+                map[i, j] = 8   # Terrain difficile, coût de déplacement de 8
             elseif char == '@'
-                map[i, j] = Inf  # Terrain infranchissable
+                map[i, j] = Inf  # Terrain infranchissable, coût infini
             end
         end
     end
@@ -55,6 +56,8 @@ function isValid(map, pos)
     # Vérifier si la position est dans les limites de la carte et si elle est franchissable
     return x >= 1 && x <= size(map, 1) && y >= 1 && y <= size(map, 2) && map[x, y] != Inf
 end
+
+# Fonction pour effectuer une recherche en largeur (BFS)
 function bfs(map, start, goal)
     # Vérifier si le point de départ ou d'arrivée est infranchissable
     if !isValid(map, start) || !isValid(map, goal)
@@ -106,7 +109,7 @@ function bfs(map, start, goal)
             if isValid(map, next_pos) && !(next_pos in visited)
                 push!(visited, next_pos)  # Marquer comme visité
                 path[next_pos] = current  # Enregistrer le prédécesseur pour la reconstruction du chemin
-                next_cost = cost + 1  #  BFS utilise un coût uniforme de 1 par pas
+                next_cost = cost + 1  # BFS utilise un coût uniforme de 1 par pas
                 enqueue!(queue, (next_pos, next_cost))  # Ajouter à la file d'attente
             end
         end
@@ -116,6 +119,8 @@ function bfs(map, start, goal)
     println("Aucun chemin trouvé.")
     return [], -1, states_evaluated  # Retourner un chemin vide, un coût de -1 et le nombre d'états évalués
 end
+
+# Fonction pour effectuer l'algorithme de Dijkstra
 function dijkstra(map, start, goal)
     # Vérifier si le point de départ ou d'arrivée est infranchissable
     if !isValid(map, start) || !isValid(map, goal)
@@ -181,71 +186,77 @@ function dijkstra(map, start, goal)
     return [], -1, states_evaluated  # Retourner un chemin vide, un coût de -1 et le nombre d'états évalués
 end
 
-greedy_best_first(map, start, goal)
-    # Vérifier si le point de départ ou d'arrivée est infranchissable
+# Fonction pour effectuer l'algorithme Greedy Best-First Search (version optimisée)
+function greedy_best_first(map, start, goal)
+    # Vérification des positions de départ et d'arrivée
     if !isValid(map, start) || !isValid(map, goal)
         println("Le point de départ ou d'arrivée est infranchissable.")
-        return [], -1, 0  # Retourner un chemin vide, un coût de -1 et 0 état évalué
+        return [], -1, 0  # Retourne un chemin vide avec un coût de -1 et 0 état évalué
     end
 
-    # Heuristique : distance de Manhattan (estimation du coût restant)
-    function heuristic(a, b)
-        return abs(a[1] - b[1]) + abs(a[2] - b[2])  # |x1 - x2| + |y1 - y2|
-    end
+    # Définition de l'heuristique (distance de Manhattan)
+    heuristic(a, b) = abs(a[1] - b[1]) + abs(a[2] - b[2])
 
-    # File de priorité pour stocker les nœuds à explorer, triés par heuristique
+    # Initialisation de la file de priorité avec le point de départ
     pq = PriorityQueue{Tuple{Int, Int}, Float64}()
-    enqueue!(pq, start, heuristic(start, goal))  # Ajouter le point de départ avec son heuristique
+    enqueue!(pq, start, heuristic(start, goal))
 
     # Dictionnaire pour stocker les prédécesseurs (reconstruction du chemin)
     predecessors = Dict{Tuple{Int, Int}, Tuple{Int, Int}}()
 
     # Directions possibles : haut, bas, gauche, droite
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    directions = [(-1,0), (1,0), (0,-1), (0,1)]
 
-    # Compteur pour le nombre d'états évalués
+    # Compteur d'états évalués et ensemble des nœuds visités
     states_evaluated = 0
+    visited = Set{Tuple{Int, Int}}()  # Pour éviter les ré-explorations
 
-    # Boucle principale de l'algorithme Greedy Best-First
+    # Boucle principale de l'algorithme
     while !isempty(pq)
-        # Extraire la case avec l'heuristique la plus basse
+        # Extraction du nœud courant (celui avec la meilleure heuristique)
         current = dequeue!(pq)
-        states_evaluated += 1  # Incrémenter le compteur d'états évalués
 
-        # Si l'objectif est atteint
-        if current == goal
-            # Reconstruire le chemin en remontant les prédécesseurs
-            path = []
-            while current != start
-                push!(path, current)  # Ajouter la position actuelle au chemin
-                current = predecessors[current]  # Remonter au prédécesseur
-            end
-            push!(path, start)  # Ajouter le point de départ
-            reverse!(path)  # Inverser pour obtenir le chemin du début à la fin
-            return path, length(path) - 1, states_evaluated  # Retourner le chemin, le nombre de pas et le nombre d'états évalués
+        # Si le nœud a déjà été visité, on passe au suivant
+        if current in visited
+            continue
         end
 
-        # Explorer les voisins (haut, bas, gauche, droite)
+        # Marquer le nœud comme visité et incrémenter le compteur
+        push!(visited, current)
+        states_evaluated += 1
+
+        # Si on a atteint le but
+        if current == goal
+            # Reconstruction du chemin en remontant les prédécesseurs
+            path = []
+            while current != start
+                push!(path, current)
+                current = predecessors[current]
+            end
+            push!(path, start)
+            reverse!(path)  # Inversion pour avoir le chemin dans l'ordre
+            return path, length(path)-1, states_evaluated
+        end
+
+        # Exploration des voisins
         for (dx, dy) in directions
-            next_pos = (current[1] + dx, current[2] + dy)  # Calculer la nouvelle position
+            next_pos = (current[1]+dx, current[2]+dy)
 
-            # Vérifier si la nouvelle position est valide et non visitée
-            if isValid(map, next_pos) && !haskey(predecessors, next_pos)
-                # Enregistrer le prédécesseur pour la reconstruction du chemin
-                predecessors[next_pos] = current
-
-                # Ajouter la nouvelle position à la file de priorité avec son heuristique
-                enqueue!(pq, next_pos, heuristic(next_pos, goal))
+            # Vérification de la validité et non-visite du voisin
+            if isValid(map, next_pos) && !(next_pos in visited) && !haskey(predecessors, next_pos)
+                predecessors[next_pos] = current  # Enregistrement du prédécesseur
+                enqueue!(pq, next_pos, heuristic(next_pos, goal))  # Ajout à la file
             end
         end
     end
 
-    # Si la file de priorité est vide et l'objectif n'est pas atteint
+    # Si aucun chemin n'a été trouvé
     println("Aucun chemin trouvé.")
-    return [], -1, states_evaluated  # Retourner un chemin vide, un coût de -1 et le nombre d'états évalués
+    return [], -1, states_evaluated
 end
 
 
+# Fonction pour effectuer l'algorithme A*
 function astar(map, start, goal)
     # Vérifier si le point de départ ou d'arrivée est infranchissable
     if !isValid(map, start) || !isValid(map, goal)
@@ -334,93 +345,274 @@ function astar(map, start, goal)
     return [], -1, states_evaluated  # Retourner un chemin vide, un coût de -1 et le nombre d'états évalués
 end
 
+# ------------------ Algorithmes WA* (Weighted A*) ------------------
+
+# Variante STANDARD de WA* (ω >=1)
+function wa_standard(map, start, goal, ω)
+    # Initialisation des structures de données
+    ouverts = PriorityQueue{Tuple{Int, Int}, Float64}()  # File de priorité
+    enqueue!(ouverts, start, 0.0)  # Ajout du point de départ
+    g = Dict(start => 0.0)  # Coûts réels depuis le départ
+    pred = Dict{Tuple{Int, Int}, Tuple{Int, Int}}()  # Prédécesseurs
+    n = 0  # Compteur d'états évalués
+
+    # Boucle principale
+    while !isempty(ouverts)
+        courant = dequeue!(ouverts)  # Extraction du nœud courant
+        n += 1  # Incrémentation du compteur
+
+        # Si objectif atteint
+        if courant == goal
+            # Reconstruction du chemin
+            chemin = [courant]
+            while courant in keys(pred)
+                courant = pred[courant]
+                push!(chemin, courant)
+            end
+            return reverse(chemin), g[goal], n
+        end
+
+        # Exploration des voisins
+        for (dx, dy) in [(-1,0), (1,0), (0,-1), (0,1)]
+            voisin = (courant[1]+dx, courant[2]+dy)
+            
+            # Vérification de la validité
+            if isValid(map, voisin)
+                tentative_g = g[courant] + map[voisin...]  # Coût réel
+                
+                # Si meilleur chemin trouvé
+                if tentative_g < get(g, voisin, Inf)
+                    g[voisin] = tentative_g  # Mise à jour du coût
+                    pred[voisin] = courant  # Mise à jour du prédécesseur
+                    f = tentative_g + ω * heuristique(voisin, goal)  # Calcul de f = g + ω*h
+                    ouverts[voisin] = f  # Ajout/mise à jour dans la file
+                end
+            end
+        end
+    end
+    
+    # Si aucun chemin trouvé
+    println("Aucun chemin trouvé.")
+    return [], -1, n
+end
+
+# Variante WA* avec ω ∈ [0, 1]
+function wa_weighted01(map, start, goal, ω)
+    # Initialisation similaire à wa_standard
+    ouverts = PriorityQueue{Tuple{Int, Int}, Float64}()
+    enqueue!(ouverts, start, 0.0)
+    g = Dict(start => 0.0)
+    pred = Dict{Tuple{Int, Int}, Tuple{Int, Int}}()
+    n = 0
+
+    while !isempty(ouverts)
+        courant = dequeue!(ouverts)
+        n += 1
+
+        if courant == goal
+            # Reconstruction du chemin
+            chemin = [courant]
+            while courant in keys(pred)
+                courant = pred[courant]
+                push!(chemin, courant)
+            end
+            return reverse(chemin), g[goal], n
+        end
+
+        for (dx, dy) in [(-1,0), (1,0), (0,-1), (0,1)]
+            voisin = (courant[1]+dx, courant[2]+dy)
+            
+            if isValid(map, voisin)
+                tentative_g = g[courant] + map[voisin...]
+                
+                if tentative_g < get(g, voisin, Inf)
+                    g[voisin] = tentative_g
+                    pred[voisin] = courant
+                    h = heuristique(voisin, goal)
+                    # Formule alternative: f = ω*g + (1-ω)*h
+                    f = ω * tentative_g + (1 - ω) * h
+                    ouverts[voisin] = f
+                end
+            end
+        end
+    end
+    
+    println("Aucun chemin trouvé.")
+    return [], -1, n
+end
+
+# Variante WA* avec ω dynamique (décroissant)
+function wa_dynamique(map, start, goal, ω_initial)
+    # Initialisation similaire
+    ouverts = PriorityQueue{Tuple{Int, Int}, Float64}()
+    enqueue!(ouverts, start, 0.0)
+    g = Dict(start => 0.0)
+    pred = Dict{Tuple{Int, Int}, Tuple{Int, Int}}()
+    n = 0
+
+    while !isempty(ouverts)
+        courant = dequeue!(ouverts)
+        n += 1
+
+        if courant == goal
+            # Reconstruction du chemin
+            chemin = [courant]
+            while courant in keys(pred)
+                courant = pred[courant]
+                push!(chemin, courant)
+            end
+            return reverse(chemin), g[goal], n
+        end
+
+        for (dx, dy) in [(-1,0), (1,0), (0,-1), (0,1)]
+            voisin = (courant[1]+dx, courant[2]+dy)
+            
+            if isValid(map, voisin)
+                tentative_g = g[courant] + map[voisin...]
+                
+                if tentative_g < get(g, voisin, Inf)
+                    g[voisin] = tentative_g
+                    pred[voisin] = courant
+                    # ω dynamique qui diminue avec le nombre d'états évalués
+                    ω_dyn = max(1.0, ω_initial - 0.001 * n)
+                    f = tentative_g + ω_dyn * heuristique(voisin, goal)
+                    ouverts[voisin] = f
+                end
+            end
+        end
+    end
+    
+    println("Aucun chemin trouvé.")
+    return [], -1, n
+end
 
 
-
-
-
+# Fonction pour exécuter l'algorithme BFS et afficher les résultats
 function algoBFS(fname, D, A)
-    # Charger la carte à partir du fichier
     map = loadMap(fname)
 
-    # Mesurer le temps d'exécution avec @elapsed
-    cpu_time = @elapsed begin
-        # Exécuter l'algorithme BFS
-        path, cost, states_evaluated = bfs(map, D, A)
-    end
+    # Exécuter une seule fois pour récupérer les vrais résultats
+    path, cost, states_evaluated = bfs(map, D, A)
 
-    # Si un chemin a été trouvé (coût != -1)
+    # Mesurer le temps moyen avec @btime (sans modifier les résultats)
+    cpu_time = @belapsed bfs($map, $D, $A)
+
     if cost != -1
         println("\nSolution BFS :")
-        @printf("CPUtime (s) : %.1e\n", cpu_time)  # Afficher le temps d'exécution
-        println("Distance D → A : ", cost)  # Afficher la distance (coût total)
-        println("Nombre d'états évalués : ", states_evaluated)  # Afficher le nombre d'états évalués
-        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))  # Afficher le chemin
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", cost)
+        println("Nombre d'états évalués : ", states_evaluated)
+        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))
     else
-        println("Aucun chemin trouvé.")  # Afficher un message si aucun chemin n'est trouvé
+        println("Aucun chemin trouvé.")
     end
 end
 
+# Fonction pour exécuter l'algorithme de Dijkstra et afficher les résultats
 function algoDijkstra(fname, D, A)
-    # Charger la carte à partir du fichier
     map = loadMap(fname)
 
-    # Mesurer le temps d'exécution avec @elapsed
-    cpu_time = @elapsed begin
-        # Exécuter l'algorithme de Dijkstra
-        path, distance, states_evaluated = dijkstra(map, D, A)
-    end
+    path, distance, states_evaluated = dijkstra(map, D, A)
+    cpu_time = @belapsed dijkstra($map, $D, $A)
 
-    # Si un chemin a été trouvé (distance != -1)
     if distance != -1
         println("\nSolution Dijkstr :")
-        @printf("CPUtime (s) : %.1e\n", cpu_time)  # Afficher le temps d'exécution
-        println("Distance D → A : ", distance)  # Afficher la distance (coût total)
-        println("Nombre d'états évalués : ", states_evaluated)  # Afficher le nombre d'états évalués
-        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))  # Afficher le chemin
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", distance)
+        println("Nombre d'états évalués : ", states_evaluated)
+        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))
     else
-        println("Aucun chemin trouvé.")  # Afficher un message si aucun chemin n'est trouvé
+        println("Aucun chemin trouvé.")
     end
 end
+
+# Fonction pour exécuter l'algorithme Greedy Best-First et afficher les résultats
 function algoGlouton(fname, D, A)
-    # Charger la carte à partir du fichier
     map = loadMap(fname)
 
-    # Mesurer le temps d'exécution avec @elapsed
-    cpu_time = @elapsed begin
-        # Exécuter l'algorithme Greedy Best-First
-        path, cost, states_evaluated = greedy_best_first(map, D, A)
-    end
+    path, cost, states_evaluated = greedy_best_first(map, D, A)
+    cpu_time = @belapsed greedy_best_first($map, $D, $A)
 
-    # Si un chemin a été trouvé (coût != -1)
     if cost != -1
         println("\nSolution Glouton :")
-        @printf("CPUtime (s) : %.1e\n", cpu_time)  # Afficher le temps d'exécution
-        println("Distance D → A : ", cost)  # Afficher la distance (nombre de pas)
-        println("Nombre d'états évalués : ", states_evaluated)  # Afficher le nombre d'états évalués
-        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))  # Afficher le chemin
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", cost)
+        println("Nombre d'états évalués : ", states_evaluated)
+        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))
     else
-        println("Aucun chemin trouvé.")  # Afficher un message si aucun chemin n'est trouvé
+        println("Aucun chemin trouvé.")
     end
 end
+
+# Fonction pour exécuter l'algorithme A* et afficher les résultats
 function algoAstar(fname, D, A)
-    # Charger la carte à partir du fichier
     map = loadMap(fname)
 
-    # Mesurer le temps d'exécution avec @elapsed
-    cpu_time = @elapsed begin
-        # Exécuter l'algorithme A*
-        path, cost, states_evaluated = astar(map, D, A)
-    end
+    path, cost, states_evaluated = astar(map, D, A)
+    cpu_time = @belapsed astar($map, $D, $A)
 
-    # Si un chemin a été trouvé (coût != -1)
     if cost != -1
         println("\nSolution A_étoile :")
-        @printf("CPUtime (s) : %.1e\n", cpu_time)  # Afficher le temps d'exécution
-        println("Distance D → A : ", cost)  # Afficher la distance (coût total)
-        println("Nombre d'états évalués : ", states_evaluated)  # Afficher le nombre d'états évalués
-        println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))  # Afficher le chemin
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", cost)
+        println("Nombre d'états évalués : ", states_evaluated)
+       # println("Chemin D → A : ", join(["($x, $y)" for (x, y) in path], " → "))
     else
-        println("Aucun chemin trouvé.")  # Afficher un message si aucun chemin n'est trouvé
+        println("Aucun chemin trouvé.")
     end
 end
+
+
+
+# --- WA* Variante STANDARD (ω ≥ 1)
+function algoWAstarStandard(fname, D, A; ω=1.5)
+    map = loadMap(fname)
+    path, cost, nb_etats = WA_etoile(map, D, A; ω=ω, mode=:standard)
+    cpu_time = @belapsed WA_etoile($map, $D, $A; ω=$ω, mode=:standard)
+
+    if cost != -1
+        println("\n Résultat WA* STANDARD (ω = $ω) :")
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", cost)
+        println("États évalués : ", nb_etats)
+        println("Chemin : ", join(["($x,$y)" for (x,y) in path], " → "))
+    else
+        println("Aucun chemin trouvé.")
+    end
+end
+
+# --- WA* Variante ω ∈ [0, 1]
+function algoWAstarWeighted01(fname, D, A; ω=0.8)
+    map = loadMap(fname)
+    path, cost, nb_etats = WA_etoile(map, D, A; ω=ω, mode=:weighted01)
+    cpu_time = @belapsed WA_etoile($map, $D, $A; ω=$ω, mode=:weighted01)
+
+    if cost != -1
+        println("\n Résultat WA* (0 ≤ ω ≤ 1) (ω = $ω) :")
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", cost)
+        println("États évalués : ", nb_etats)
+        println("Chemin : ", join(["($x,$y)" for (x,y) in path], " → "))
+    else
+        println("Aucun chemin trouvé.")
+    end
+end
+
+# --- WA* Variante DYNAMIQUE
+function algoWAstarDynamique(fname, D, A; ω=2.5)
+    map = loadMap(fname)
+    path, cost, nb_etats = WA_etoile(map, D, A; ω=ω, mode=:dynamic)
+    cpu_time = @belapsed WA_etoile($map, $D, $A; ω=$ω, mode=:dynamic)
+
+    if cost != -1
+        println("\n Résultat WA* DYNAMIQUE (ω initial = $ω) :")
+        @printf("CPUtime (s) : %.1e\n", cpu_time)
+        println("Distance D → A : ", cost)
+        println("États évalués : ", nb_etats)
+        println("Chemin : ", join(["($x,$y)" for (x,y) in path], " → "))
+    else
+        println("Aucun chemin trouvé.")
+    end
+end
+
+
